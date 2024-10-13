@@ -1,4 +1,4 @@
-const NGROK_URL = "https://9a8b-34-23-46-107.ngrok-free.app/";
+const NGROK_URL = "https://834f-34-91-67-159.ngrok-free.app/";
 
 export default async function getRemoved(backgroundDataURI, decoded) {
   const maskCanvas = document.createElement("canvas");
