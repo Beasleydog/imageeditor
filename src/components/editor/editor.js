@@ -13,17 +13,14 @@ export default function Editor({ backgroundImageDataUrl }) {
   const [points, setPoints] = useState([]);
   const [objects, setObjects] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
-  const [scale, setScale] = useState({ scaleX: 1, scaleY: 1 }); // **Added scaling state**
+  const [scale, setScale] = useState({ scaleX: 1, scaleY: 1 });
 
   const worker = useWorker("worker.js");
   const embedding = useEmbed(backgroundImageDataUrl, worker);
   const decoded = useDecoded(points, worker);
-  console.log(decoded);
 
   useEffect(() => {
     if (!decoded) return;
-    console.log("removing!");
-    console.log(decoded);
 
     getRemoved(imageDataUrl, decoded).then((newImageDataUrl) => {
       setImageDataUrl(newImageDataUrl);
@@ -38,25 +35,22 @@ export default function Editor({ backgroundImageDataUrl }) {
             ...prevObjects,
             {
               image: newImage,
-              width: cutoutObject.width * scale.scaleX, // **Scaled width**
-              height: cutoutObject.height * scale.scaleY, // **Scaled height**
-              x: cutoutObject.boundingBox.minX * scale.scaleX, // **Scaled X position**
-              y: cutoutObject.boundingBox.minY * scale.scaleY, // **Scaled Y position**
+              width: cutoutObject.width * scale.scaleX,
+              height: cutoutObject.height * scale.scaleY,
+              x: cutoutObject.boundingBox.minX * scale.scaleX,
+              y: cutoutObject.boundingBox.minY * scale.scaleY,
             },
           ]);
-          console.log("new object", cutoutObject);
         };
       });
     });
-  }, [decoded]); // **Added scale to dependencies**
+  }, [decoded, scale, imageDataUrl]);
 
   function handleMouseDown(e) {
     e = e.evt;
-    console.log(e, embedding);
     if (e.button !== 2) return;
     if (!embedding) return;
 
-    // Normalize the point to be between 0 and 1
     const canvas = e.target;
     const rect = canvas.getBoundingClientRect();
     const point = [
@@ -64,7 +58,6 @@ export default function Editor({ backgroundImageDataUrl }) {
       (e.clientY - rect.top) / rect.height,
     ];
 
-    // Add the point to the list
     setPoints([
       ...points,
       {
@@ -106,7 +99,7 @@ export default function Editor({ backgroundImageDataUrl }) {
         setObjects={setObjects}
         selectedId={selectedId}
         setSelectedId={setSelectedId}
-        onScaleChange={setScale} // **Passed setScale to Canvas**
+        onScaleChange={setScale}
       />
     </div>
   );
@@ -122,7 +115,7 @@ function Canvas({
   setObjects,
   selectedId,
   setSelectedId,
-  onScaleChange, // **Received scaling callback**
+  onScaleChange,
 }) {
   const [image] = useImage(backgroundImageDataUrl);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -148,9 +141,9 @@ function Canvas({
 
       setDimensions({ width: newWidth, height: newHeight });
 
-      const scaleX = newWidth / image.width; // **Calculate scaleX**
-      const scaleY = newHeight / image.height; // **Calculate scaleY**
-      onScaleChange({ scaleX, scaleY }); // **Inform Editor of scaling factors**
+      const scaleX = newWidth / image.width;
+      const scaleY = newHeight / image.height;
+      onScaleChange({ scaleX, scaleY });
     }
   }, [image, onScaleChange]);
 
@@ -251,12 +244,6 @@ function ExtractedObject({ object, index, isSelected, onSelect, onChange }) {
     const node = imageRef.current;
     const width = node.width();
     const height = node.height();
-
-    // Removed offset settings
-    // node.offsetX(width / 2);
-    // node.offsetY(height / 2);
-    // node.x(width / 2);
-    // node.y(height / 2);
 
     node.to({
       scaleX: 1.05,
