@@ -2,9 +2,7 @@
 
 This project is an experimental exploration of browser-based image segmentation using TransformerJS and inpainting using LaMa (Large Mask Inpainting).
 
-
-https://github.com/user-attachments/assets/aa5b641e-a84d-4de7-a6f4-cae291e65ba8
-
+https://github.com/user-attachments/assets/a5f1c772-4848-4b69-900b-d65cb9cc74c2
 
 ## Overview
 
