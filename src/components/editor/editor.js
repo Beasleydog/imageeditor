@@ -107,7 +107,6 @@ export default function Editor({ backgroundImageDataUrl }) {
   }
 
   const checkDeselect = (e) => {
-    // const clickedOnEmpty = e.target === e.target.getStage();
     const clickedOnEmpty = e.target._id == 6;
     if (clickedOnEmpty) {
       setSelectedId(null);
