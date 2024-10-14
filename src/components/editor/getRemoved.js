@@ -1,5 +1,4 @@
-const NGROK_URL = "https://834f-34-91-67-159.ngrok-free.app/";
-
+const NGROK_URL = "https://71dc-34-127-76-124.ngrok-free.app/";
 export default async function getRemoved(backgroundDataURI, decoded) {
   const maskCanvas = document.createElement("canvas");
   maskCanvas.width = decoded.width;
@@ -26,11 +25,19 @@ export default async function getRemoved(backgroundDataURI, decoded) {
   }
 
   maskContext.putImageData(imageData, 0, 0);
-  const maskDataURI = maskCanvas.toDataURL();
+  const maskDataURI = maskCanvas.toDataURL("image/png");
 
   const bgImage = new Image();
   bgImage.src = backgroundDataURI;
   await new Promise((resolve) => (bgImage.onload = resolve));
+
+  // Convert backgroundDataURI to PNG if it's not already
+  const bgCanvas = document.createElement("canvas");
+  bgCanvas.width = bgImage.width;
+  bgCanvas.height = bgImage.height;
+  const bgContext = bgCanvas.getContext("2d");
+  bgContext.drawImage(bgImage, 0, 0);
+  const bgDataURIPNG = bgCanvas.toDataURL("image/png");
 
   const response = await fetch(`${NGROK_URL}/inpaint`, {
     method: "POST",
@@ -38,7 +45,7 @@ export default async function getRemoved(backgroundDataURI, decoded) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      image: backgroundDataURI,
+      image: bgDataURIPNG,
       mask: maskDataURI,
     }),
   });

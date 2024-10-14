@@ -2,11 +2,11 @@ import { useRef, useEffect, useState } from "react";
 import useEmbed from "./useEmbed";
 import useWorker from "./useWorker";
 import useDecoded from "./useDecoded";
-import Konva from "konva";
 import { Stage, Layer, Image, Circle, Transformer } from "react-konva";
 import useImage from "use-image";
 import getRemoved from "./getRemoved";
 import getLayerImage from "./getLayerImage";
+import "./editor.css";
 
 export default function Editor({ backgroundImageDataUrl }) {
   const [imageDataUrl, setImageDataUrl] = useState(backgroundImageDataUrl);
@@ -14,10 +14,41 @@ export default function Editor({ backgroundImageDataUrl }) {
   const [objects, setObjects] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [scale, setScale] = useState({ scaleX: 1, scaleY: 1 });
+  const [imageDimensions, setImageDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
+  const [image] = useImage(backgroundImageDataUrl);
 
   const worker = useWorker("worker.js");
   const embedding = useEmbed(backgroundImageDataUrl, worker);
   const decoded = useDecoded(points, worker);
+
+  useEffect(() => {
+    if (image) {
+      const maxCanvasWidth = window.innerWidth - 100;
+      const maxCanvasHeight = window.innerHeight - 100;
+      let newWidth = image.width;
+      let newHeight = image.height;
+      const aspectRatio = image.width / image.height;
+
+      if (newWidth > maxCanvasWidth) {
+        newWidth = maxCanvasWidth;
+        newHeight = newWidth / aspectRatio;
+      }
+
+      if (newHeight > maxCanvasHeight) {
+        newHeight = maxCanvasHeight;
+        newWidth = newHeight * aspectRatio;
+      }
+
+      setImageDimensions({ width: newWidth, height: newHeight });
+
+      const scaleX = newWidth / image.width;
+      const scaleY = newHeight / image.height;
+      setScale({ scaleX, scaleY });
+    }
+  }, [image]);
 
   useEffect(() => {
     if (!decoded) return;
@@ -44,7 +75,7 @@ export default function Editor({ backgroundImageDataUrl }) {
         };
       });
     });
-  }, [decoded, scale, imageDataUrl]);
+  }, [decoded, scale]);
 
   function handleMouseDown(e) {
     e = e.evt;
@@ -76,31 +107,45 @@ export default function Editor({ backgroundImageDataUrl }) {
   }
 
   const checkDeselect = (e) => {
-    const clickedOnEmpty = e.target === e.target.getStage();
+    // const clickedOnEmpty = e.target === e.target.getStage();
+    const clickedOnEmpty = e.target._id == 6;
     if (clickedOnEmpty) {
       setSelectedId(null);
     }
   };
 
   return (
-    <div>
-      {embedding ? "Got!" : "Getting..."}
-      <Canvas
-        onMouseDown={(e) => {
-          handleMouseDown(e);
-          checkDeselect(e);
-        }}
-        onContextMenu={handleContextMenu}
-        backgroundImageDataUrl={imageDataUrl}
-        embedding={embedding}
-        points={points}
-        decoded={decoded}
-        objects={objects}
-        setObjects={setObjects}
-        selectedId={selectedId}
-        setSelectedId={setSelectedId}
-        onScaleChange={setScale}
-      />
+    <div className="editor-container">
+      {!embedding ? (
+        <div
+          className="skeleton-loader"
+          style={{
+            width: `${imageDimensions.width}px`,
+            height: `${imageDimensions.height}px`,
+          }}
+        ></div>
+      ) : (
+        <div className="canvas-container">
+          <Canvas
+            onMouseDown={(e) => {
+              handleMouseDown(e);
+              checkDeselect(e);
+            }}
+            onClick={checkDeselect}
+            onContextMenu={handleContextMenu}
+            backgroundImageDataUrl={imageDataUrl}
+            embedding={embedding}
+            points={points}
+            decoded={decoded}
+            objects={objects}
+            setObjects={setObjects}
+            selectedId={selectedId}
+            setSelectedId={setSelectedId}
+            onScaleChange={setScale}
+            dimensions={imageDimensions}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -108,6 +153,7 @@ export default function Editor({ backgroundImageDataUrl }) {
 function Canvas({
   backgroundImageDataUrl,
   onMouseDown,
+  onClick,
   onContextMenu,
   points,
   decoded,
@@ -116,36 +162,10 @@ function Canvas({
   selectedId,
   setSelectedId,
   onScaleChange,
+  dimensions,
 }) {
   const [image] = useImage(backgroundImageDataUrl);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [maskImage] = useState(new window.Image());
-
-  useEffect(() => {
-    if (image) {
-      const maxCanvasWidth = window.innerWidth - 100;
-      const maxCanvasHeight = window.innerHeight - 100;
-      let newWidth = image.width;
-      let newHeight = image.height;
-      const aspectRatio = image.width / image.height;
-
-      if (newWidth > maxCanvasWidth) {
-        newWidth = maxCanvasWidth;
-        newHeight = newWidth / aspectRatio;
-      }
-
-      if (newHeight > maxCanvasHeight) {
-        newHeight = maxCanvasHeight;
-        newWidth = newHeight * aspectRatio;
-      }
-
-      setDimensions({ width: newWidth, height: newHeight });
-
-      const scaleX = newWidth / image.width;
-      const scaleY = newHeight / image.height;
-      onScaleChange({ scaleX, scaleY });
-    }
-  }, [image, onScaleChange]);
 
   useEffect(() => {
     if (decoded) {
@@ -179,6 +199,7 @@ function Canvas({
       width={dimensions.width}
       height={dimensions.height}
       onMouseDown={onMouseDown}
+      onClick={onClick}
       onContextMenu={onContextMenu}
     >
       <Layer>
